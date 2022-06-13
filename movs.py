@@ -4,29 +4,29 @@
 # direcciones H: right | left
 # direcciones V: agacharse (bend) ? | jump (solo 1, si estoy en el aire ya no)
 md = {
-    'attacks': ('close' , 'far', 'block' ),
-    'dispHor': ('right' , 'left' ),
-    'dispVer': ('bend'  , 'jump' )
+    'movs': ( None, 'close' , 'far', 'block' ),
+    'walkHor': ( None, 'right' , 'left' ),
+    # 'dispVer': ( 'bend'  , 'jump' )
+    'jump'   : ( False  , True )
     # [000]NO? [001] [002] [010] [011] [012]...
 }
 
 movs = {}
-for i, a in enumerate([None] + list(md['attacks'])):
-  for j, h in enumerate([None] + list(md['dispHor'])):
-    for k, v in enumerate([None] + list(md['dispVer'])):
+for i, a in enumerate(md['movs']):
+  for j, h in enumerate(md['walkHor']):
+    for k, v in enumerate(md['jump']):
       # print([i,j,k],' ',a,h,v)
       movs[(a,h,v)] = (i,j,k)
 print(movs)
 
 movs = {}
-i = 0
-for a in [None] + list(md['attacks']):
-  for h in [None] + list(md['dispHor']):
-    for v in [None] + list(md['dispVer']):
-      movs[(a,h,v)] = (i)
-      i += 1
+c = 0
+for i, a in enumerate(md['movs']):
+  for j, h in enumerate(md['walkHor']):
+    for k, v in enumerate(md['jump']):
+      movs[(a,h,v)] = (c)
+      c += 1
 print(movs)
 
 movs_ord = {v: k for k, v in movs.items()}
-movs_ord
 print(movs_ord)
