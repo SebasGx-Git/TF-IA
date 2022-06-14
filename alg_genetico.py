@@ -1,7 +1,7 @@
 def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
                  f_idonea, f_generarCandidatos,
                  f_seleccionarPares, f_cruce,
-                 f_mutacion, mejor):
+                 f_mutacion, f_mejor):
   # iniciar la poblacion
   poblacion = poblacion_inicial
   iteracion = 0
@@ -13,7 +13,7 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
     print('mejor:',mejor_idonea)
     # verificar si hay una buena mejora de la funcion idonea
     if(abs(max(idoneos) - mejor_idonea)<= alpha):
-      return mejor(poblacion,f_idonea)
+      return f_mejor(poblacion,f_idonea)
     else:
       mejor_idonea = max(idoneos)
     #generar candidatos y emparejar para cruce
@@ -31,4 +31,4 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
     iteracion = iteracion + 1
     poblacion = nva_generacion
     # print('poblacion:',poblacion)
-  return mejor(poblacion,f_idonea)
+  return f_mejor(poblacion,f_idonea)

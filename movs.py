@@ -50,9 +50,6 @@ class Nemesis:
   def mutate(self):
     self.mutateColor()
     self.mutateReact()
-
-  def f_ideal(self):
-    return self.duration
   
 
 # CROSSOVER
@@ -82,44 +79,44 @@ class Crossover:
     return Nemesis(color,children[0]), Nemesis(color,children[1])
 
 
-class Population():
+n = 10
+pob_ini = [Nemesis() for _ in range(n)]
 
-  def __init__(self, n:int):
-    self.pob = [Nemesis() for _ in range(n)]
-    # pob_ini = [ "{0:05b}".format(p) for p in [0,1,3,15] ]
-  
-  def best(self):
-    # def mejor(poblacion,f_idonea):
-    return max(self.pob, key = lambda x : x.f_ideal())
 
-  def generateCandidates(self,ideals:list): #list f_ideal
-    #lista aleatoria de las parejas para el torneo
-    list_pares = list(range(len(self.pob)))
-    rd.shuffle(list_pares)
-    #inicializando el arreglo de ganadores
-    ganadores = []
-    for i in range(len(self.pob)//2):
-      par = list_pares[i*2]
-      impar = list_pares[i*2+1]
-      # pelea entre la iesima pareja
-      if(ideals[par]>ideals[impar]):
-        ganadores.append(self.pob[par])
-        ganadores.append(self.pob[par])
-      else:
-        ganadores.append(self.pob[impar])
-        ganadores.append(self.pob[impar])
-    return ganadores
+f_ideal = lambda n: n.duration
 
-  def selectPairs(candidatos):
-    #lista aleatoria de las parejas para el cruce
-    list_pares = list(range(len(candidatos)))
-    rd.shuffle(list_pares)
-    pares = []
-    for i in range(len(candidatos)//2):
-      par = list_pares[i*2]
-      impar = list_pares[i*2+1]
-      pares.append([candidatos[par],candidatos[impar]])
-    return pares
+def generateCandidates(population:list,ideals:list): #list f_ideal
+  #lista aleatoria de las parejas para el torneo
+  list_pares = list(range(len(population)))
+  rd.shuffle(list_pares)
+  #inicializando el arreglo de ganadores
+  ganadores = []
+  for i in range(len(population)//2):
+    par = list_pares[i*2]
+    impar = list_pares[i*2+1]
+    # pelea entre la iesima pareja
+    if(ideals[par]>ideals[impar]):
+      ganadores.append(population[par])
+      ganadores.append(population[par])
+    else:
+      ganadores.append(population[impar])
+      ganadores.append(population[impar])
+  return ganadores
+
+def selectPairs(candidatos):
+  #lista aleatoria de las parejas para el cruce
+  list_pares = list(range(len(candidatos)))
+  rd.shuffle(list_pares)
+  pares = []
+  for i in range(len(candidatos)//2):
+    par = list_pares[i*2]
+    impar = list_pares[i*2+1]
+    pares.append([candidatos[par],candidatos[impar]])
+  return pares
+
+f_cross = lambda a,b : Crossover(a,b).cross()
+f_mutacion = lambda n: n.mutate()
+best = lambda population: max(population, key = lambda x : x.f_ideal())
 
 # EXAMPLE
 n1 = Nemesis()
@@ -133,7 +130,10 @@ n3.mutate()
 n4.mutate()
 print(n3,n4)
 
+
+
+
 # alg_genetico(pob_ini, -0.0001, 100,
-#              f_idonea, generarCandidatos,
-#              seleccionarPares, cruce,
-#              mutacion, mejor)
+#              f_ideal, generateCandidates,
+#              selectPairs, f_cross,
+#              f_mutacion, mejor)
