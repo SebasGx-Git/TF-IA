@@ -208,7 +208,24 @@ class Bullets(pygame.sprite.Sprite):
             if self.rect.x <= -10:
                 self.kill()
             
+#Create Enemy Bullets Class  : Se crea para que tengan diferentes colliders a la clase Bullets normal            
+class EnemyBullets(pygame.sprite.Sprite):
+    def __init__(self, x, y, look):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("resources/enemy-bullet.png")
+        self.rect = self.image.get_rect()
+        self.rect.center = [x, y]
+        self.look = look
 
+    def update(self):
+        if self.look is True:
+            self.rect.x += 10
+            if self.rect.x >= screen_width:
+                self.kill()
+        if self.look is False:
+            self.rect.x -= 10
+            if self.rect.x <= -10:
+                self.kill()
             
 
 
