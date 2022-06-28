@@ -1,3 +1,4 @@
+from cmath import rect
 from time import time
 from tkinter import Canvas
 import pygame
@@ -91,6 +92,7 @@ class Player(pygame.sprite.Sprite):
     def animate(self):
         self.is_animating = True
 
+    
        
     def jump(self):
         if self.isJump is True:
@@ -208,6 +210,7 @@ class Player(pygame.sprite.Sprite):
             self.Shoot()
 
         self.HealthBar()  
+       
 
         self.jump() #La accion de saltar se verifica y se realiza constantemente, dado que tiene que actualizar su posición con cada Tick
     
@@ -230,7 +233,7 @@ class Nemesis(pygame.sprite.Sprite):
 
         self.UI = pygame.image.load("resources/ui_face_nemesis.png")
 
-        self.image = self.spriteRigth[self.current_sprite_right]
+        self.image = self.spriteLeft[self.current_sprite_left]
 
         self.is_animating = False
 
@@ -395,6 +398,11 @@ class Bullets(pygame.sprite.Sprite):
             self.rect.x -= 10
             if self.rect.x <= -10:
                 self.kill()
+        if pygame.sprite.spritecollide(self, nemesis_group,False) and nemesis.isBlocked is False:
+            self.kill()
+            nemesis.damage()
+        if pygame.sprite.spritecollide(self, nemesis_group,False) and nemesis.isBlocked is True:
+            self.kill()
             
 
 #Create Enemy Bullets Class  : Se crea para que tengan diferentes colliders a la clase Bullets normal
@@ -416,6 +424,11 @@ class EnemyBullets(pygame.sprite.Sprite):
             self.rect.x -= 10
             if self.rect.x <= -10:
                 self.kill()
+        if pygame.sprite.spritecollide(self, player_group,False) and player.isBlocked is False:
+            self.kill()
+            player.damage()
+        if pygame.sprite.spritecollide(self, player_group,False) and player.isBlocked is True:
+            self.kill()
 
 
 #create sprite groups
@@ -474,6 +487,8 @@ while run:
                 tile_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
             x += 1
         y += 1
+
+    
 
     #update player
     player.update()
