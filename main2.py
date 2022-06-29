@@ -4,6 +4,8 @@ from tkinter import Canvas
 from turtle import width
 import pygame
 from pygame.locals import *
+from sqlalchemy import false
+import movs as genes
 
 #define fps
 clock = pygame.time.Clock()
@@ -17,8 +19,7 @@ TILE_SIZE = 24 * PIXEL_UNIT #24 es el tamaño del pixelart
 screen_width = TILE_SIZE*WIDTH
 screen_height = TILE_SIZE*HEIGHT
 
-icon = pygame.image.load('assets/icon.png')
-pygame.display.set_icon(icon)
+pygame.display.set_icon( pygame.image.load('assets/icon.png') )
 pygame.display.set_caption('Artificial Nemesis Selection')
 screen = pygame.display.set_mode((screen_width, screen_height))
 
@@ -26,8 +27,15 @@ def loadSprite(img_file):
     sprite = pygame.image.load(f"resources/{img_file}").convert_alpha() #convert() #
     return pygame.transform.scale(sprite, (TILE_SIZE, TILE_SIZE))
 
+#load Background and floor
+bg = pygame.image.load("resources/bg_sky.png").convert()
+bg = pygame.transform.scale(bg, (screen_width, screen_height))
+base1 = loadSprite('bg_floor.png')
+base2 = loadSprite('bg_floor2.png')
+draw_bg = lambda : screen.blit(bg, (0, 0))
 
-#define colours
+nemesis_genes = genes.pob_ini
+
 class HealthBar:
     def __init__(self, toLeft = True):
         self.x = TILE_SIZE
@@ -49,57 +57,31 @@ class HealthBar:
         pygame.draw.rect(screen, (255, 210, 142), (self.x, self.y, health, self.height))
 
 
-#load image
-bg = pygame.image.load("resources/bg_sky.png").convert()
-bg = pygame.transform.scale(bg, (screen_width, screen_height))
-base1 = loadSprite('bg_floor.png')
-base2 = loadSprite('bg_floor2.png')
-
-# game_map = [['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-#             ['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-#             ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2'],
-#             ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2']]
-
-
-def draw_bg():
-    screen.blit(bg, (0, 0))
-
-
-#create Player class
-class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+class Agent(pygame.sprite.Sprite):
+    def __init__(self, x, y,
+                img_none_r, img_walking_right:list, 
+                img_block_r, img_attack_r, img_shot_r,
+                img_ui_face, main_look_right:bool = True ):
         pygame.sprite.Sprite.__init__(self)
+        self.main_look_right = main_look_right
 
-        self.spriteRigth = []
-        self.spriteRigth.append(loadSprite("p_none-none.png"))
-        self.spriteRigth.append(loadSprite("p_none-right1.png"))
-        self.spriteRigth.append(loadSprite("p_none-right2.png"))
+        self.spriteRigth = [loadSprite(i) for i in img_walking_right]
         self.spriteLeft = [ pygame.transform.flip(s, True, False) for s in self.spriteRigth ]
         self.current_sprite_right = self.current_sprite_left = 0
-
-        self.UI = loadSprite("ui_face_player.png")
-        self.healthBar = HealthBar()
-
         self.image = self.spriteRigth[self.current_sprite_right]
-
         self.is_animating = False
-        
-        self.imageblock = loadSprite("p_block-none.png")
+
+        self.imageblock = loadSprite(img_block_r)
         self.imageblockleft = pygame.transform.flip(self.imageblock, True, False)
-        self.imageattack = loadSprite("p_close-right1.png")
+        self.imageattack = loadSprite(img_attack_r)
         self.imageattackleft = pygame.transform.flip(self.imageattack, True, False)
-        self.imageshot = loadSprite("p_far-right1.png")
+        self.imageshot = loadSprite(img_shot_r)
         self.imageshotleft = pygame.transform.flip(self.imageattack, True, False)
-        self.imageND = loadSprite("p_none-right2.png")
+        self.imageND = loadSprite(img_none_r)
+        if main_look_right is False: self.imageND = pygame.transform.flip(self.imageND, True, False)
+
+        self.UI = loadSprite(img_ui_face)
+        self.healthBar = HealthBar(main_look_right)
 
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
@@ -114,13 +96,10 @@ class Player(pygame.sprite.Sprite):
         self.cooldown = 500 #milliseconds
 
         self.last_shot = pygame.time.get_ticks()
-        
         self.invencivility = False #Tiempo de recuperación despues de daño
 
     def animate(self):
         self.is_animating = True
-
-    
        
     def jump(self):
         if self.isJump is True:
@@ -181,27 +160,15 @@ class Player(pygame.sprite.Sprite):
             pygame.time.set_timer(pygame.USEREVENT +3 , 800) #En 0,8 segundos, vuelve a ser vulnerable
      
     def Block(self):
-        self.isBlocked = True                            #¿Esta bloqueando? Si
-        pygame.time.set_timer(pygame.USEREVENT +1 , 900) #Establece timer del escudo, Cooldown del escudo, se desactiva a los 0,9 segundos
-        
-        if self.isBlocked is True and self.look is True: #Esta bloqueando y mira a la derecha
-            self.image = self.imageblock                 #Se activa animación de bloqueo a la derecha
-        elif self.isBlocked is True and self.look is False:
-            self.image = self.imageblockleft
+        #self.isBlocked = True                            #¿Esta bloqueando? Si
+        pygame.time.set_timer(pygame.USEREVENT +1 , 500) #Establece timer del escudo, Cooldown del escudo, se desactiva a los 0,5 segundos
+        self.image = self.imageblock if self.look else self.imageblockleft
 
     def Attack(self):
-        self.isAttack = True
+        #self.isAttack = True
         pygame.time.set_timer(pygame.USEREVENT +2 , 900) #Establece cooldown del ataque, cada 0.9 segundos se puede volver a atacar   
-            
-        if self.isAttack and self.look:
-            self.image = self.imageattack
-        elif self.isAttack and self.look is False:
-            self.image = self.imageattackleft
+        self.image = self.imageattack if self.look else self.imageattack
    
-    def HealthBar(self):
-        screen.blit(self.UI, (0,0)) #image (left top)
-        self.healthBar.draw(self.healt)
-
     def Shoot(self):
         time_now = pygame.time.get_ticks()
         bullet = Bullets(self.rect.centerx, self.rect.top+10, self.look)
@@ -209,6 +176,22 @@ class Player(pygame.sprite.Sprite):
         self.last_shot = time_now
         self.image = self.imageshot if self.look else self.imageshotleft
         
+    def HealthBar(self):
+        screen.blit(self.UI, (0,0) if self.main_look_right else (screen_width-TILE_SIZE,0) ) #image (left top)
+        self.healthBar.draw(self.healt)
+
+    def update(self):
+        if(self.healt <= 0): self.__del__()
+        #time_now = pygame.time.get_ticks() #Tiempo actual    
+
+
+#create Player class
+class Player(Agent):
+    def __init__(self, x, y):
+        Agent.__init__(self, x, y, "p_none-none.png",
+        ["p_none-right1.png", "p_none-none.png", "p_none-right2.png"],
+        "p_block-none.png", "p_close-none.png", "p_far-none.png",
+        "ui_face_player.png" )
 
     def update(self):
         time_now = pygame.time.get_ticks() #Tiempo actual
@@ -240,151 +223,28 @@ class Player(pygame.sprite.Sprite):
 
         self.HealthBar()  
        
-
         self.jump() #La accion de saltar se verifica y se realiza constantemente, dado que tiene que actualizar su posición con cada Tick
     
 
-class Nemesis(pygame.sprite.Sprite):
-    def __init__(self,x,y):
-        pygame.sprite.Sprite.__init__(self)
-
-        self.spriteRigth = []
-        self.spriteRigth.append(loadSprite("n_close-none.png"))
-        self.spriteRigth.append(loadSprite("n_close-right1.png"))
-        self.spriteRigth.append(loadSprite("n_close-right2.png"))
-        self.spriteLeft = [ pygame.transform.flip(s, True, False) for s in self.spriteRigth ]
-        self.current_sprite_right = self.current_sprite_left = 0
-
-        self.UI = loadSprite("ui_face_nemesis.png")
-        self.healthBar = HealthBar(False)
-
-        self.image = self.spriteLeft[self.current_sprite_left]
-
-        self.is_animating = False
-
-        #imagenes invertidas...
-        # self.imageblock = loadSprite("n_block-right.png")
-        # self.imageblockleft = loadSprite("n_block-left.png")
-        # self.imageattack = loadSprite("n_far-right.png")
-        # self.imageattackleft = loadSprite("n_far-left.png")
-        # self.imageND = loadSprite("n_close-left1.png")
-        self.imageblock = loadSprite("n_block-none.png")
-        self.imageblockleft = pygame.transform.flip(self.imageblock, True, False)
-        self.imageattack = loadSprite("n_close-right1.png")
-        self.imageattackleft = pygame.transform.flip(self.imageattack, True, False)
-        self.imageshot = loadSprite("n_far-right1.png")
-        self.imageshotleft = pygame.transform.flip(self.imageattack, True, False)
-        self.imageND = loadSprite("n_none-right2.png")
-        self.imageND = pygame.transform.flip(self.imageND, True, False)
-        
-        self.rect = self.image.get_rect()
-        self.rect.center = [x, y]
-        self.isJump = False
-        self.healt = 100
-        self.jump_high = 15
-        self.speed = 5
-        self.jump_vel = self.jump_high
-        self.isBlocked = False
-        self.isAttack = False
-        self.look = False # True derecha , False izquierda
-        self.cooldown = 500 #milliseconds
-
-        self.last_shot = pygame.time.get_ticks()
-        
-        self.invencivility = False #Tiempo de recuperación despues de daño
-
-    def animate(self):
-        self.is_animating = True
-
-       
-    def jump(self):
-        if self.isJump is True:
-            self.rect.y -= self.jump_vel
-            self.jump_vel -= 1
-            if self.jump_vel < -(self.jump_high):
-                self.jump_vel = self.jump_high
-                self.isJump = False
-
-    def AnimationNormalBlock(self):
-        self.image = self.imageND
-        self.isBlocked = False
-
-    def AnimationNormalAttack(self):
-        self.image = self.imageND
-        self.isAttack = False
-
-    def AnimationMoveLeft(self):
-        self.image = self.spriteLeft[int(self.current_sprite_left)]    #El sprite actual se posiciona en la imagen actual
-        self.animate()                                                 #¿Esta animado? Si
-        if self.is_animating == True:                                  
-
-            self.current_sprite_left += 0.2                            #Para que la animación sea mas lenta, se recorre en decimales
-
-            if self.current_sprite_left >= len(self.spriteLeft):       #Cuando se recorren la fila de imagenes del sprite, y llega al final, vuelve al inicio
-                self.current_sprite_left = 0
-                self.is_animating = False
-
-            self.image = self.spriteLeft[int(self.current_sprite_left)]
-
-    def AnimationMoveRight(self): #Se explica el funcionamiento en AnimationMoveLeft ya que funcionan de manera similar
-        self.animate()
-        if self.is_animating == True:
-
-            self.current_sprite_right += 0.2
-
-            if self.current_sprite_right >= len(self.spriteRigth):
-                self.current_sprite_right = 0
-                self.is_animating = False
-
-            self.image = self.spriteRigth[int(self.current_sprite_right)]
-
-    def MoveLeft(self):
-        self.rect.x -= self.speed
-        self.look = False
-
-    def MoveRight(self):
-        self.rect.x += self.speed
-        self.look = True
+class Nemesis(Agent):
+    def __init__(self,x,y, nemesis_gen_pos):
+        Agent.__init__(self, x, y, "n_none-none.png",
+        ["n_none-right1.png", "n_none-none.png", "n_none-right2.png"],
+        "n_block-none.png", "n_close-none.png", "n_far-none.png",
+        "ui_face_nemesis.png", False )
+        self.talaive = 0
+        self.ngen = nemesis_gen_pos
     
-    def vulneravility(self):
-        self.invencivility = False
-
-    def damage(self):
-        if player.invencivility is False:                    #Mientras no sea invencible:
-            self.healt -= 10                                 #Le baja 10 puntos de vida
-            player.invencivility = True                      #Se hace invencible. Como los ticks son tan rapidos, la función se aplica muy rapido y baja mas de 10 puntos. Es por esto que lo hace invencible, basicamente funciona como un cooldown de daño
-            pygame.time.set_timer(pygame.USEREVENT +4 , 800) #En 0,8 segundos, vuelve a ser vulnerable
-     
-    def Block(self):
-        self.isBlocked = True                            #¿Esta bloqueando? Si
-        pygame.time.set_timer(pygame.USEREVENT +5 , 900) #Establece timer del escudo, Cooldown del escudo, se desactiva a los 0,9 segundos
-        
-        if self.isBlocked is True and self.look is True: #Esta bloqueando y mira a la derecha
-            self.image = self.imageblock                 #Se activa animación de bloqueo a la derecha
-        elif self.isBlocked is True and self.look is False:
-            self.image = self.imageblockleft
-
-    def Attack(self):
-        self.isAttack = True
-        pygame.time.set_timer(pygame.USEREVENT +6 , 900) #Establece cooldown del ataque, cada 0.9 segundos se puede volver a atacar   
-            
-        if self.isAttack is True and self.look is True:
-            self.image = self.imageattack
-        elif self.isAttack is True and self.look is False:
-            self.image = self.imageattackleft
-
-    def Shoot(self):
-        time_now = pygame.time.get_ticks()
-        bullet = EnemyBullets(self.rect.centerx, self.rect.top+10, self.look)
-        enemybullet_group.add(bullet)
-        self.last_shot = time_now
-        self.image = self.imageshot if self.look else self.imageshotleft
-
-    def HealthBar(self):
-        screen.blit(self.UI, (screen_width-TILE_SIZE,0)) #image (left top)
-        self.healthBar.draw(self.healt)
+    def __del__(self):
+        #guardamos el tiempo de vida
+        nemesis_genes[self.ngen].duration = self.talaive
 
     def update(self):
+        super(Agent, self).update()
+        #asumiendo que para que realice un update
+        #el player tuvo que haberlo visto
+        self.talaive += 1
+        print(self.talaive)
         time_now = pygame.time.get_ticks() #Tiempo actual
        
         #Cuando se presiona:
@@ -411,6 +271,7 @@ class Nemesis(pygame.sprite.Sprite):
 
         self.jump()
         self.HealthBar()
+        
 
 #create Bullets class
 class Bullets(pygame.sprite.Sprite):
@@ -474,7 +335,7 @@ enemybullet_group = pygame.sprite.Group()
 player = Player(int(screen_width / 4), (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
 player_group.add(player)
 
-nemesis = Nemesis(int(screen_width - 100), (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
+nemesis = Nemesis(int(screen_width - 100), (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2, 0 )
 nemesis_group.add(nemesis)
 
 
@@ -485,7 +346,11 @@ while run:
 
     #draw background
     draw_bg()
-
+    #FLOOR TILES
+    for x in range(WIDTH):
+        screen.blit(base1, (x * TILE_SIZE, (HEIGHT-FLOOR)*TILE_SIZE))
+        for y in range(FLOOR-1):
+            screen.blit(base2, (x * TILE_SIZE, (HEIGHT-y-1)*TILE_SIZE))
     
     #event handlers
     for event in pygame.event.get():
@@ -506,26 +371,6 @@ while run:
         if event.type == pygame.USEREVENT +6 : 
             nemesis.AnimationNormalAttack()
             
-
-    # tile_rects = []
-    # y = 0
-    # for row in game_map:
-    #     x = 0
-    #     for tile in row:
-    #         if tile == '1':
-    #             screen.blit(base1, (x * TILE_SIZE, y * TILE_SIZE))
-    #         if tile == '2':
-    #             screen.blit(base2, (x * TILE_SIZE, y * TILE_SIZE))
-    #         if tile != '0':
-    #             tile_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-    #         x += 1
-    #     y += 1
-    for x in range(WIDTH):
-        screen.blit(base1, (x * TILE_SIZE, (HEIGHT-FLOOR)*TILE_SIZE))
-        for y in range(FLOOR-1):
-            screen.blit(base2, (x * TILE_SIZE, (HEIGHT-y-1)*TILE_SIZE))
-    
-
     #update player
     player.update()
     nemesis.update()
