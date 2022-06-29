@@ -101,7 +101,7 @@ class Agent(pygame.sprite.Sprite):
         self.isBlocked = False
         self.isAttack = False
         self.look = True # True derecha , False izquierda
-        self.cooldown = 500 #milliseconds
+        self.cooldown = 200 #500 #milliseconds
 
         self.last_shot = pygame.time.get_ticks()
         self.invencivility = False #Tiempo de recuperación despues de daño
@@ -165,7 +165,7 @@ class Agent(pygame.sprite.Sprite):
         if player.invencivility is False:                    #Mientras no sea invencible:
             self.healt -= 50#10                                 #Le baja 10 puntos de vida
             player.invencivility = True                      #Se hace invencible. Como los ticks son tan rapidos, la función se aplica muy rapido y baja mas de 10 puntos. Es por esto que lo hace invencible, basicamente funciona como un cooldown de daño
-            pygame.time.set_timer(pygame.USEREVENT +3 , 800) #En 0,8 segundos, vuelve a ser vulnerable
+            pygame.time.set_timer(pygame.USEREVENT +3 , 200 ) #800 #En 0,8 segundos, vuelve a ser vulnerable
      
     def Block(self):
         #self.isBlocked = True                            #¿Esta bloqueando? Si
@@ -244,6 +244,7 @@ class Nemesis(Agent):
     
     def __del__(self):
         #guardamos el tiempo de vida
+        print("nem del:", current_nemesis)
         nemesis_genes[current_nemesis].duration = self.talaive
 
     def update(self):
@@ -412,10 +413,10 @@ while run:
         are_fighting = False
         #reiniciamos la salud del jugador
         player.healt = 100 
-        del nemesis[current_nemesis] #?
+        #del nemesis[current_nemesis] #?
         print(current_nemesis)
         current_nemesis += 1
-        if current_nemesis == num_nemesis:
+        if current_nemesis >= num_nemesis-1:
             nemesis_genes = set_new_level()
             current_nemesis = 0
 
