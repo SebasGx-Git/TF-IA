@@ -1,42 +1,73 @@
 from cmath import rect
 from time import time
 from tkinter import Canvas
+from turtle import width
 import pygame
 from pygame.locals import *
 
 #define fps
 clock = pygame.time.Clock()
 fps = 60
-screen_width = 480
-screen_height = 312
-TILE_SIZE = 24
+# bgratio = 16 : 9
+WIDTH = 16
+HEIGHT = 9
+FLOOR = 2
+PIXEL_UNIT = 2
+TILE_SIZE = 24 * PIXEL_UNIT #24 es el tamaño del pixelart
+screen_width = TILE_SIZE*WIDTH
+screen_height = TILE_SIZE*HEIGHT
+
+icon = pygame.image.load('assets/icon.png')
+pygame.display.set_icon(icon)
+pygame.display.set_caption('Artificial Nemesis Selection')
 screen = pygame.display.set_mode((screen_width, screen_height))
 
+def loadSprite(img_file):
+    sprite = pygame.image.load(f"resources/{img_file}").convert_alpha() #convert() #
+    return pygame.transform.scale(sprite, (TILE_SIZE, TILE_SIZE))
 
 
 #define colours
-red = (255, 0, 0)
-green = (0, 255, 0)
+class HealthBar:
+    def __init__(self, toLeft = True):
+        self.x = TILE_SIZE
+        self.y = TILE_SIZE//2
+        self.width = TILE_SIZE*2
+        self.height = TILE_SIZE//8
+        if not toLeft: self.x = screen_width - self.x - self.width
+        self.border = (self.x - PIXEL_UNIT, self.y - PIXEL_UNIT,
+            self.width + PIXEL_UNIT*2, self.height + PIXEL_UNIT*2 )
+
+    def draw(self, health):
+        # Surface, color, (X Y Widht Height)
+        # self.c_border = (33,30,97)
+        # self.c_damage = (224, 119, 170)
+        # self.c_health = (255, 210, 142)
+        health = (health * self.width) / 100
+        pygame.draw.rect(screen, (33,30,97), self.border)
+        pygame.draw.rect(screen, (224, 119, 170), (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(screen, (255, 210, 142), (self.x, self.y, health, self.height))
 
 
 #load image
 bg = pygame.image.load("resources/bg_sky.png").convert()
-base1 = pygame.image.load("resources/bg_floor.png").convert()
-base2 = pygame.image.load("resources/bg_floor2.png").convert()
+bg = pygame.transform.scale(bg, (screen_width, screen_height))
+base1 = loadSprite('bg_floor.png')
+base2 = loadSprite('bg_floor2.png')
 
-game_map = [['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-            ['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-            ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2'],
-            ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2']]
+# game_map = [['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
+#             ['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
+#             ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2'],
+#             ['2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2']]
 
 
 def draw_bg():
@@ -49,29 +80,26 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
 
         self.spriteRigth = []
-        self.spriteRigth.append(pygame.image.load("resources/p_none-right.png"))
-        self.spriteRigth.append(pygame.image.load("resources/p_none-right1.png"))
-        self.spriteRigth.append(pygame.image.load("resources/p_none-right2.png"))
-        self.current_sprite_right = 0
+        self.spriteRigth.append(loadSprite("p_none-none.png"))
+        self.spriteRigth.append(loadSprite("p_none-right1.png"))
+        self.spriteRigth.append(loadSprite("p_none-right2.png"))
+        self.spriteLeft = [ pygame.transform.flip(s, True, False) for s in self.spriteRigth ]
+        self.current_sprite_right = self.current_sprite_left = 0
 
-        self.spriteLeft = []
-        self.spriteLeft.append(pygame.image.load("resources/p_none-left.png"))
-        self.spriteLeft.append(pygame.image.load("resources/p_none-left1.png"))
-        self.spriteLeft.append(pygame.image.load("resources/p_none-left2.png"))
-        self.current_sprite_left = 0
-
-        self.UI = pygame.image.load("resources/ui_face_player.png")
+        self.UI = loadSprite("ui_face_player.png")
+        self.healthBar = HealthBar()
 
         self.image = self.spriteRigth[self.current_sprite_right]
 
         self.is_animating = False
-
         
-        self.imageblock = pygame.image.load("resources/p_block-none.png")
-        self.imageblockleft = pygame.image.load("resources/p_block-left.png")
-        self.imageattack = pygame.image.load("resources/p_far-right1.png")
-        self.imageattackleft = pygame.image.load("resources/p_far-left1.png")
-        self.imageND = pygame.image.load("resources/p_none-right2.png")
+        self.imageblock = loadSprite("p_block-none.png")
+        self.imageblockleft = pygame.transform.flip(self.imageblock, True, False)
+        self.imageattack = loadSprite("p_close-right1.png")
+        self.imageattackleft = pygame.transform.flip(self.imageattack, True, False)
+        self.imageshot = loadSprite("p_far-right1.png")
+        self.imageshotleft = pygame.transform.flip(self.imageattack, True, False)
+        self.imageND = loadSprite("p_none-right2.png")
 
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
@@ -165,21 +193,22 @@ class Player(pygame.sprite.Sprite):
         self.isAttack = True
         pygame.time.set_timer(pygame.USEREVENT +2 , 900) #Establece cooldown del ataque, cada 0.9 segundos se puede volver a atacar   
             
-        if self.isAttack is True and self.look is True:
+        if self.isAttack and self.look:
             self.image = self.imageattack
-        elif self.isAttack is True and self.look is False:
+        elif self.isAttack and self.look is False:
             self.image = self.imageattackleft
    
     def HealthBar(self):
-        screen.blit(self.UI, (30,10))
-        pygame.draw.rect(screen, red, (50,20,100,5))
-        pygame.draw.rect(screen, green, (50,20,self.healt,5))
+        screen.blit(self.UI, (0,0)) #image (left top)
+        self.healthBar.draw(self.healt)
 
     def Shoot(self):
         time_now = pygame.time.get_ticks()
         bullet = Bullets(self.rect.centerx, self.rect.top+10, self.look)
         bullet_group.add(bullet)
         self.last_shot = time_now
+        self.image = self.imageshot if self.look else self.imageshotleft
+        
 
     def update(self):
         time_now = pygame.time.get_ticks() #Tiempo actual
@@ -220,30 +249,34 @@ class Nemesis(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
 
         self.spriteRigth = []
-        self.spriteRigth.append(pygame.image.load("resources/n_close-right.png"))
-        self.spriteRigth.append(pygame.image.load("resources/n_close-right1.png"))
-        self.spriteRigth.append(pygame.image.load("resources/n_close-right2.png"))
-        self.current_sprite_right = 0
+        self.spriteRigth.append(loadSprite("n_close-none.png"))
+        self.spriteRigth.append(loadSprite("n_close-right1.png"))
+        self.spriteRigth.append(loadSprite("n_close-right2.png"))
+        self.spriteLeft = [ pygame.transform.flip(s, True, False) for s in self.spriteRigth ]
+        self.current_sprite_right = self.current_sprite_left = 0
 
-        self.spriteLeft = []
-        self.spriteLeft.append(pygame.image.load("resources/n_close-left.png"))
-        self.spriteLeft.append(pygame.image.load("resources/n_close-left1.png"))
-        self.spriteLeft.append(pygame.image.load("resources/n_close-left2.png"))
-        self.current_sprite_left = 0
-
-        self.UI = pygame.image.load("resources/ui_face_nemesis.png")
+        self.UI = loadSprite("ui_face_nemesis.png")
+        self.healthBar = HealthBar(False)
 
         self.image = self.spriteLeft[self.current_sprite_left]
 
         self.is_animating = False
 
+        #imagenes invertidas...
+        # self.imageblock = loadSprite("n_block-right.png")
+        # self.imageblockleft = loadSprite("n_block-left.png")
+        # self.imageattack = loadSprite("n_far-right.png")
+        # self.imageattackleft = loadSprite("n_far-left.png")
+        # self.imageND = loadSprite("n_close-left1.png")
+        self.imageblock = loadSprite("n_block-none.png")
+        self.imageblockleft = pygame.transform.flip(self.imageblock, True, False)
+        self.imageattack = loadSprite("n_close-right1.png")
+        self.imageattackleft = pygame.transform.flip(self.imageattack, True, False)
+        self.imageshot = loadSprite("n_far-right1.png")
+        self.imageshotleft = pygame.transform.flip(self.imageattack, True, False)
+        self.imageND = loadSprite("n_none-right2.png")
+        self.imageND = pygame.transform.flip(self.imageND, True, False)
         
-        self.imageblock = pygame.image.load("resources/n_block-right.png")
-        self.imageblockleft = pygame.image.load("resources/n_block-left.png")
-        self.imageattack = pygame.image.load("resources/n_far-right.png")
-        self.imageattackleft = pygame.image.load("resources/n_far-left.png")
-        self.imageND = pygame.image.load("resources/n_close-left1.png")
-
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.isJump = False
@@ -345,11 +378,11 @@ class Nemesis(pygame.sprite.Sprite):
         bullet = EnemyBullets(self.rect.centerx, self.rect.top+10, self.look)
         enemybullet_group.add(bullet)
         self.last_shot = time_now
+        self.image = self.imageshot if self.look else self.imageshotleft
 
     def HealthBar(self):
-        screen.blit(self.UI, (screen_width-55,10))
-        pygame.draw.rect(screen, red, (screen_width-150,20,100,5))
-        pygame.draw.rect(screen, green, (screen_width-150,20,self.healt,5))
+        screen.blit(self.UI, (screen_width-TILE_SIZE,0)) #image (left top)
+        self.healthBar.draw(self.healt)
 
     def update(self):
         time_now = pygame.time.get_ticks() #Tiempo actual
@@ -384,7 +417,7 @@ class Bullets(pygame.sprite.Sprite):
     
     def __init__(self, x, y, look):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("resources/bullet.png")
+        self.image = loadSprite("shot_player.png")
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.look = look
@@ -410,7 +443,7 @@ class Bullets(pygame.sprite.Sprite):
 class EnemyBullets(pygame.sprite.Sprite):
     def __init__(self, x, y, look):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("resources/enemy-bullet.png")
+        self.image = loadSprite("shot_nemesis.png")
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.look = look
@@ -437,11 +470,11 @@ nemesis_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 enemybullet_group = pygame.sprite.Group()
 
-#create player
-player = Player(int(screen_width / 4), screen_height - 83)
+#create player (pos Anchor X, pos Anchor Y)
+player = Player(int(screen_width / 4), (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
 player_group.add(player)
 
-nemesis = Nemesis(int(screen_width - 100), screen_height - 83)
+nemesis = Nemesis(int(screen_width - 100), (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
 nemesis_group.add(nemesis)
 
 
@@ -474,20 +507,23 @@ while run:
             nemesis.AnimationNormalAttack()
             
 
-    tile_rects = []
-    y = 0
-    for row in game_map:
-        x = 0
-        for tile in row:
-            if tile == '1':
-                screen.blit(base1, (x * TILE_SIZE, y * TILE_SIZE))
-            if tile == '2':
-                screen.blit(base2, (x * TILE_SIZE, y * TILE_SIZE))
-            if tile != '0':
-                tile_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            x += 1
-        y += 1
-
+    # tile_rects = []
+    # y = 0
+    # for row in game_map:
+    #     x = 0
+    #     for tile in row:
+    #         if tile == '1':
+    #             screen.blit(base1, (x * TILE_SIZE, y * TILE_SIZE))
+    #         if tile == '2':
+    #             screen.blit(base2, (x * TILE_SIZE, y * TILE_SIZE))
+    #         if tile != '0':
+    #             tile_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+    #         x += 1
+    #     y += 1
+    for x in range(WIDTH):
+        screen.blit(base1, (x * TILE_SIZE, (HEIGHT-FLOOR)*TILE_SIZE))
+        for y in range(FLOOR-1):
+            screen.blit(base2, (x * TILE_SIZE, (HEIGHT-y-1)*TILE_SIZE))
     
 
     #update player
