@@ -59,22 +59,23 @@ class Crossover:
     self.p1 = parent1
     self.p2 = parent2
 
-  def cross_color(self):
-    w = rd.random()
+  def cross_color(self, corte):
+    # w = rd.random()
+    w = (corte * 100) / len(self.p1.reactions) #7 - 100 | c - x | c * 100 / 7
     # print(w, colors)
     return tuple(np.average([self.p1.colors] + [self.p1.colors],
                       axis=0, weights=[w, 1-w]).astype(int))
 
-  def cross_reactions(self):
-    #iteracion 1 == 0 , i2 = 1
-    corte = rd.randint(1,6)
+  def cross_reactions(self, corte):
     h1 = self.p1.reactions[:corte] + self.p2.reactions[corte:]
     h2 = self.p2.reactions[:corte] + self.p1.reactions[corte:]
     return [h1, h2]
 
   def cross(self,iteracion=None):
-    color = self.cross_color()
-    children = self.cross_reactions()
+    #iteracion 1 == 0 , i2 = 1
+    corte = rd.randint(1,6)
+    color = self.cross_color(corte)
+    children = self.cross_reactions(corte)
     #TO DO usar iteración
     return Nemesis(color,children[0]), Nemesis(color,children[1])
 
