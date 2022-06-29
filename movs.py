@@ -16,8 +16,9 @@ print(movs,movs_ord,sep='\n')
 # NEMESIS
 class Nemesis:
 
-  def __init__(self, colors:tuple=None, reactions:list = None):
+  def __init__(self, colors:tuple=None, reactions:list = None, stimated_dur = 0):
     self.duration = 0
+    self.stimated_dur = stimated_dur
     self.colors = colors if colors != None else tuple([rd.randint(0,255) for i in range(3)])
     if reactions == None:
       self.reactions = list(movs_ord)[:]
@@ -77,15 +78,19 @@ class Crossover:
     corte = rd.randint(1,6)
     color = self.cross_color(corte)
     children = self.cross_reactions(corte)
+    if self.p1.stimated_dur == 0 : self.p1.stimated_dur = self.p1.duration
+    if self.p2.stimated_dur == 0 : self.p2.stimated_dur = self.p2.duration
+    stimated_dur = (self.p1.stimated_dur + self.p2.stimated_dur)//2
     #TO DO usar iteración
-    return Nemesis(color,children[0]), Nemesis(color,children[1])
+    return Nemesis(color,children[0],stimated_dur), Nemesis(color,children[1],stimated_dur)
 
 
-n = 3
+n = 6
 pob_ini = [Nemesis() for _ in range(n)]
 
 
-f_ideal = lambda n: n.duration
+def f_ideal(n:Nemesis):
+  return n.duration if n.duration > 0 else n.stimated_dur
 
 def generateCandidates(population:list,ideals:list): #list f_ideal
   #lista aleatoria de las parejas para el torneo
@@ -116,11 +121,15 @@ def selectPairs(candidatos):
     pares.append([candidatos[par],candidatos[impar]])
   return pares
 
-f_cross = lambda a,b : Crossover(b[0],b[1]).cross() #iteracion, par
+def f_cross(a, b:tuple) : #iteracion, par
+  return Crossover(b[0],b[1]).cross() 
+
 def f_mutacion(n:Nemesis):
   n.mutate()
   return n
-best = lambda population, _: (max(population, key = lambda x : f_ideal(x)), population)
+
+def best(population, _):
+  return (max(population, key = lambda x : f_ideal(x)), population)
 
 # EXAMPLE
 n1 = Nemesis()
@@ -135,10 +144,12 @@ n4.mutate()
 print(n3,n4)
 
 
-def newGeneration():
-  global pob_ini
-  print(pob_ini)
-  return alg_genetico(pob_ini, -0.0001, 100,
+def newGeneration(poblacion = None):
+  if poblacion == None:
+    global pob_ini
+    print(pob_ini)
+    poblacion = pob_ini
+  return alg_genetico(poblacion, -0.0001, 100,
              f_ideal, generateCandidates,
              selectPairs, f_cross,
              f_mutacion, best)

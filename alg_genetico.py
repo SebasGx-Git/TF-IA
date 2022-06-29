@@ -11,7 +11,7 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
   while iteracion < max_iteraciones:
     #calcular las funciones idoneas
     idoneos = [f_idonea(x) for x in poblacion]
-    print('mejor:',mejor_idonea)
+    #print('mejor:',mejor_idonea, idoneos)
     # verificar si hay una buena mejora de la funcion idonea
     if(abs(max(idoneos) - mejor_idonea)<= alpha):
       return f_mejor(poblacion,f_idonea)
@@ -26,11 +26,11 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
       #generar los hijos y mutarlos
       hijos = f_cruce(iteracion,par)
       hijos = [f_mutacion(hijos[0]),f_mutacion(hijos[1])]
-      print("nuevos hijos", hijos)
+      #print("nuevos hijos", hijos)
       # agregar a la nueva generacion
       nva_generacion.extend(hijos)
     # avanzar la iteracion
     iteracion = iteracion + 1
     poblacion = nva_generacion
-    # print('poblacion:',poblacion)
+  print('poblacion:',poblacion)
   return f_mejor(poblacion,f_idonea)
