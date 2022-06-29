@@ -349,12 +349,15 @@ nemesis_groups = []
 enemybullet_groups = []
 
 def set_new_level():
+    global current_level
     current_level += 1
     best_of_level, new_population = genes.newGeneration()
     print('Mejor del nivel',best_of_level)
-    return new_population
-    # nemesis_genes = new_population
-    # current_nemesis = 0
+    #return new_population
+    global nemesis_genes
+    nemesis_genes = new_population
+    global current_nemesis
+    current_nemesis = 0
 
 for i in range(num_nemesis):
     n_x = screen_width * (i+1) - TILE_SIZE*2
@@ -417,8 +420,9 @@ while run:
         print(current_nemesis)
         current_nemesis += 1
         if current_nemesis >= num_nemesis-1:
-            nemesis_genes = set_new_level()
-            current_nemesis = 0
+            set_new_level()
+            # nemesis_genes = set_new_level()
+            # current_nemesis = 0
 
     #update sprite groups
     bullet_group.update()

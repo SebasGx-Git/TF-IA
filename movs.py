@@ -81,7 +81,7 @@ class Crossover:
     return Nemesis(color,children[0]), Nemesis(color,children[1])
 
 
-n = 10
+n = 3
 pob_ini = [Nemesis() for _ in range(n)]
 
 
@@ -116,9 +116,11 @@ def selectPairs(candidatos):
     pares.append([candidatos[par],candidatos[impar]])
   return pares
 
-f_cross = lambda a,b : Crossover(a,b).cross()
-f_mutacion = lambda n: n.mutate()
-best = lambda population: (max(population, key = lambda x : x.f_ideal()), population)
+f_cross = lambda a,b : Crossover(b[0],b[1]).cross() #iteracion, par
+def f_mutacion(n:Nemesis):
+  n.mutate()
+  return n
+best = lambda population, _: (max(population, key = lambda x : f_ideal(x)), population)
 
 # EXAMPLE
 n1 = Nemesis()
@@ -134,6 +136,8 @@ print(n3,n4)
 
 
 def newGeneration():
+  global pob_ini
+  print(pob_ini)
   return alg_genetico(pob_ini, -0.0001, 100,
              f_ideal, generateCandidates,
              selectPairs, f_cross,

@@ -4,6 +4,7 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
                  f_mutacion, f_mejor):
   # iniciar la poblacion
   poblacion = poblacion_inicial
+  print("pob ini", poblacion)
   iteracion = 0
   mejor_idonea = -1000
 
@@ -25,6 +26,7 @@ def alg_genetico(poblacion_inicial, alpha, max_iteraciones,
       #generar los hijos y mutarlos
       hijos = f_cruce(iteracion,par)
       hijos = [f_mutacion(hijos[0]),f_mutacion(hijos[1])]
+      print("nuevos hijos", hijos)
       # agregar a la nueva generacion
       nva_generacion.extend(hijos)
     # avanzar la iteracion
