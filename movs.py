@@ -1,5 +1,6 @@
 import random as rd
 import numpy as np
+from alg_genetico import alg_genetico 
 
 # MOVS
 # motionless: still | block -> sin combinación
@@ -117,7 +118,7 @@ def selectPairs(candidatos):
 
 f_cross = lambda a,b : Crossover(a,b).cross()
 f_mutacion = lambda n: n.mutate()
-best = lambda population: max(population, key = lambda x : x.f_ideal())
+best = lambda population: (max(population, key = lambda x : x.f_ideal()), population)
 
 # EXAMPLE
 n1 = Nemesis()
@@ -132,9 +133,9 @@ n4.mutate()
 print(n3,n4)
 
 
+def newGeneration():
+  return alg_genetico(pob_ini, -0.0001, 100,
+             f_ideal, generateCandidates,
+             selectPairs, f_cross,
+             f_mutacion, best)
 
-
-# alg_genetico(pob_ini, -0.0001, 100,
-#              f_ideal, generateCandidates,
-#              selectPairs, f_cross,
-#              f_mutacion, mejor)
