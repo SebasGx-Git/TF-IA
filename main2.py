@@ -2,6 +2,7 @@ from cmath import rect
 from time import time
 from tkinter import Canvas
 from turtle import width
+from numpy import place
 import pygame
 from pygame.locals import *
 from sqlalchemy import false
@@ -38,7 +39,7 @@ draw_bg = lambda : screen.blit(bg, (0, 0))
 nemesis_genes = genes.pob_ini
 num_nemesis = len(nemesis_genes)
 scroll_hor = 0 #?
-world_width = num_nemesis * WIDTH # * TILE_SIZE?
+world_width = num_nemesis * (WIDTH + 1) # * TILE_SIZE?
 are_fighting = True# True #Nuestra pantalla inicia con 1 nemesis y player
 current_nemesis = 0
 
@@ -163,7 +164,7 @@ class Agent(pygame.sprite.Sprite):
 
     def damage(self):
         if player.invencivility is False:                    #Mientras no sea invencible:
-            self.healt -= 50#10                                 #Le baja 10 puntos de vida
+            self.healt -= 20#10                                 #Le baja 10 puntos de vida
             player.invencivility = True                      #Se hace invencible. Como los ticks son tan rapidos, la función se aplica muy rapido y baja mas de 10 puntos. Es por esto que lo hace invencible, basicamente funciona como un cooldown de daño
             pygame.time.set_timer(pygame.USEREVENT +3 , 200 ) #800 #En 0,8 segundos, vuelve a ser vulnerable
      
@@ -200,6 +201,8 @@ class Player(Agent):
         ["p_none-right1.png", "p_none-none.png", "p_none-right2.png"],
         "p_block-none.png", "p_close-none.png", "p_far-none.png",
         "ui_face_player.png" )
+        #'still', 'a_close' , 'a_far', 'block', 'w_right', 'w_left', 'jump'
+        self.currAction = 'still'
 
     def update(self):
         time_now = pygame.time.get_ticks() #Tiempo actual
@@ -209,28 +212,33 @@ class Player(Agent):
         if key[pygame.K_LEFT] and self.rect.left > 0:
             self.MoveLeft()            #Se mueve a la izquierda 
             self.AnimationMoveLeft()   #Se anima el movimiento
+            self.currAction = 'w_right'
             
         if key[pygame.K_RIGHT] and self.rect.right < screen_width:
             self.MoveRight()           #Se mueve a la derecha
             self.AnimationMoveRight()  #Se anima el movimiento
+            self.currAction = 'w_left'
             
         if key[pygame.K_SPACE] and self.isJump is False:
             self.isJump = True
+            self.currAction = 'jump'
             
         if key[pygame.K_h]:
             self.damage()
             
         if key[pygame.K_x]: #Bloquear
             self.Block()
+            self.currAction = 'block'
                  
         if key[pygame.K_c]: #Atacar
             self.Attack()
+            self.currAction = 'a_close'
                    
         if key[pygame.K_z] and time_now - self.last_shot > self.cooldown: #Disparar
             self.Shoot()
+            self.currAction = 'a_far'
 
         self.HealthBar()  
-       
         self.jump() #La accion de saltar se verifica y se realiza constantemente, dado que tiene que actualizar su posición con cada Tick
     
 
@@ -240,41 +248,46 @@ class Nemesis(Agent):
         ["n_none-right1.png", "n_none-none.png", "n_none-right2.png"],
         "n_block-none.png", "n_close-none.png", "n_far-none.png",
         "ui_face_nemesis.png", False )
-        self.talaive = 0
+        self.talive = 0
     
-    def __del__(self):
+    def __del__(self): pass
         #guardamos el tiempo de vida
-        print("nem del:", current_nemesis)
-        nemesis_genes[current_nemesis].duration = self.talaive
+        # print("nem del:", current_nemesis)
+        # global nemesis_genes
+        # nemesis_genes[current_nemesis].duration = self.talive
+        # print("nem del:", nemesis_genes[current_nemesis].duration)
+        # self.kill()
 
-    def update(self):
+    def update(self, player_currAction):
         #asumiendo que para que realice un update
         #el player tuvo que haberlo visto
-        self.talaive += 1
-        #print(self.talaive)
+        #self.talaive += 1
+        nemesis_genes[current_nemesis].duration += 1
         time_now = pygame.time.get_ticks() #Tiempo actual
-       
-        #Cuando se presiona:
-        key = pygame.key.get_pressed()
-        if key[pygame.K_k] and self.rect.left > 0:
+
+        #Cuando el player:....
+        #movs_ord de acuerdo al numero devuelvo la accion
+        num_act_player = genes.movs[player_currAction]
+        num_reaction = nemesis_genes[current_nemesis].reactions[num_act_player]
+        #movs de acuerdo a la accion devuelvo el numero
+        reaction = genes.movs_ord[num_reaction]
+        #print(reaction)
+        #'still', 'a_close' , 'a_far', 'block', 'w_right', 'w_left', 'jump'
+        #if (reaction == 'still'): pass
+        if (reaction == 'a_close'):  #Atacar
+            self.Attack()
+        if (reaction == 'a_far') and time_now - self.last_shot > self.cooldown: #Disparar
+            self.Shoot()
+        if (reaction == 'block'): #Bloquear
+            self.Block()
+        if (reaction == 'w_left')  and self.rect.left > 0:
             self.MoveLeft()            #Se mueve a la izquierda 
             self.AnimationMoveLeft()   #Se anima el movimiento
-            
-        if key[pygame.K_l] and self.rect.right < screen_width:
+        if (reaction == 'w_right') and self.rect.right < screen_width:
             self.MoveRight()           #Se mueve a la derecha
             self.AnimationMoveRight()  #Se anima el movimiento
-
-        if key[pygame.K_p] and self.isJump is False:
+        if (reaction == 'jump') and self.isJump is False:
             self.isJump = True
-
-        if key[pygame.K_g] and time_now - self.last_shot > self.cooldown: #Disparar
-            self.Shoot()
-
-        if key[pygame.K_i]: #Bloquear
-            self.Block()
-                 
-        if key[pygame.K_o]: #Atacar
-            self.Attack()
 
         self.jump()
         self.HealthBar()
@@ -299,12 +312,12 @@ class Bullets(pygame.sprite.Sprite):
             self.rect.x -= 10
             if self.rect.x <= -10:
                 self.kill()
-        if (pygame.sprite.spritecollide(self, nemesis_groups[current_nemesis],False)
-            and nemesis[current_nemesis].isBlocked is False):
+        if (pygame.sprite.spritecollide(self, nemesis_group,False) #s[current_nemesis]
+            and nemesis.isBlocked is False):
             self.kill()
-            nemesis[current_nemesis].damage()
-        if (pygame.sprite.spritecollide(self, nemesis_groups[current_nemesis],False)
-            and nemesis[current_nemesis].isBlocked is True):
+            nemesis.damage()
+        if (pygame.sprite.spritecollide(self, nemesis_group,False)
+            and nemesis.isBlocked is True):
             self.kill()
             
 
@@ -344,36 +357,90 @@ player_group.add(player)
 
 #create Nemesis_ss (pos Anchor X, pos Anchor Y)
 #nemesis_genes
-nemesis = []
-nemesis_groups = []
-enemybullet_groups = []
+# nemesis = []
+# nemesis_groups = []
+# enemybullet_groups = []
+nemesis = Nemesis(screen_width - TILE_SIZE*2, (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
+nemesis_group = pygame.sprite.Group()
+nemesis_group.add(nemesis)
+enemybullet_group = pygame.sprite.Group()
+
+# def generate_groups():
+#     global nemesis
+#     global nemesis_groups
+#     global enemybullet_groups
+#     for i in range(num_nemesis):
+#         # n_x = screen_width * (i+1) - TILE_SIZE*2
+#         n_x = screen_width - TILE_SIZE*2
+#         nemesis.append( Nemesis(n_x, (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 ) )
+#         nemesis_group = pygame.sprite.Group()
+#         nemesis_group.add(nemesis)
+#         nemesis_groups.append(nemesis_group)
+#         enemybullet_group = pygame.sprite.Group()
+#         enemybullet_groups.append(enemybullet_group)
 
 def set_new_level():
     global current_level
-    current_level += 1
-    best_of_level, new_population = genes.newGeneration()
-    print('Mejor del nivel',best_of_level)
-    #return new_population
-    global nemesis_genes
-    nemesis_genes = new_population
     global current_nemesis
+    global are_fighting 
+    global nemesis_genes
+    # global nemesis_groups
+    # global enemybullet_groups
+
+    current_level += 1
     current_nemesis = 0
+    are_fighting = True
+    # nemesis_groups.clear()
+    # enemybullet_groups.clear()
+    print("duraciones:", [n.duration for n in nemesis_genes] )
+    best_of_level, new_population = genes.newGeneration(nemesis_genes)
+    print('Mejor del nivel',best_of_level)
+    nemesis_genes = new_population
+    # generate_groups()
+    print('actual level',current_level)
+    return new_population
 
-for i in range(num_nemesis):
-    n_x = screen_width * (i+1) - TILE_SIZE*2
-    nemesis.append( Nemesis(n_x, (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 ) )
-    nemesis_group = pygame.sprite.Group()
-    nemesis_group.add(nemesis)
-    nemesis_groups.append(nemesis_group)
-    enemybullet_group = pygame.sprite.Group()
-    enemybullet_groups.append(enemybullet_group)
-
-
+print('ancho del mundo',world_width)
+# generate_groups()
 run = True
 while run:
 
     clock.tick(fps)
 
+    #deaths
+    if(player.healt <= 0):
+        del player
+        print("El player fue vencido en el nivel", current_level)
+        break
+    #current_nemesis
+    # if(nemesis[current_nemesis].healt <= 1):
+    if(nemesis.healt <= 1):
+        #are_fighting = False
+        #reiniciamos la salud del jugador
+        player.healt = 100 
+        # del nemesis[current_nemesis] #?
+        # nemesis_groups[current_nemesis].empty()
+        # del nemesis_groups[current_nemesis]
+        # enemybullet_groups[current_nemesis].empty()
+        # del enemybullet_groups[current_nemesis]
+        print('nemesis a eliminar', current_nemesis)
+        #nemesis[current_nemesis].healt = 100
+        nemesis_group.empty()
+        nemesis = Nemesis(screen_width - TILE_SIZE*2, (HEIGHT-FLOOR)*TILE_SIZE - TILE_SIZE//2 )
+        nemesis_group.add(nemesis)
+        current_nemesis += 1
+        if current_nemesis >= num_nemesis :
+            current_level += 1
+            current_nemesis = 0
+            are_fighting = True
+            # nemesis_groups.clear()
+            # enemybullet_groups.clear()
+            print("duraciones:", [n.duration for n in nemesis_genes] )
+            best_of_level, new_population = genes.newGeneration(nemesis_genes)
+            print('Mejor del nivel',best_of_level)
+            nemesis_genes = new_population
+            # generate_groups()
+            print('actual level',current_level)
     #draw background
     draw_bg()
     #FLOOR TILES | CAMERA
@@ -407,31 +474,20 @@ while run:
             
     #update player
     player.update()
-    if(player.healt <= 0):
-        del player
-        print(current_level)
-        break
-    nemesis[current_nemesis].update()
-    if(nemesis[current_nemesis].healt <= 0):
-        are_fighting = False
-        #reiniciamos la salud del jugador
-        player.healt = 100 
-        #del nemesis[current_nemesis] #?
-        print(current_nemesis)
-        current_nemesis += 1
-        if current_nemesis >= num_nemesis-1:
-            set_new_level()
-            # nemesis_genes = set_new_level()
-            # current_nemesis = 0
+    nemesis.update(player.currAction)
 
     #update sprite groups
     bullet_group.update()
+    # enemybullet_groups[current_nemesis].update()
     enemybullet_group.update()
     #draw sprite groups
     player_group.draw(screen)
     bullet_group.draw(screen)
+    # nemesis_groups[current_nemesis].draw(screen)
     nemesis_group.draw(screen)
     enemybullet_group.draw(screen)
+    # enemybullet_groups[current_nemesis].draw(screen)
+
 
     pygame.display.update()
     #print(player.isAttack)
