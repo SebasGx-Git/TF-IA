@@ -16,9 +16,10 @@ print(movs,movs_ord,sep='\n')
 # NEMESIS
 class Nemesis:
 
-  def __init__(self, colors:tuple=None, reactions:list = None, stimated_dur = 0):
+  def __init__(self, colors:tuple=None, reactions:list = None, stimated_heur = 0):
     self.duration = 0
-    self.stimated_dur = stimated_dur
+    self.damage_done = 0
+    self.stimated_heur = stimated_heur
     self.colors = colors if colors != None else tuple([rd.randint(0,255) for i in range(3)])
     if reactions == None:
       self.reactions = list(movs_ord)[:]
@@ -78,19 +79,20 @@ class Crossover:
     corte = rd.randint(1,6)
     color = self.cross_color(corte)
     children = self.cross_reactions(corte)
-    if self.p1.stimated_dur == 0 : self.p1.stimated_dur = self.p1.duration
-    if self.p2.stimated_dur == 0 : self.p2.stimated_dur = self.p2.duration
-    stimated_dur = (self.p1.stimated_dur + self.p2.stimated_dur)//2
+    if self.p1.stimated_heur == 0 : self.p1.stimated_heur = self.p1.duration #self.p1.damage_done 
+    if self.p2.stimated_heur == 0 : self.p2.stimated_heur = self.p2.duration #self.p2.damage_done 
+    stimated_heur = (self.p1.stimated_heur + self.p2.stimated_heur)//2
     #TO DO usar iteración
-    return Nemesis(color,children[0],stimated_dur), Nemesis(color,children[1],stimated_dur)
+    return Nemesis(color,children[0],stimated_heur), Nemesis(color,children[1],stimated_heur)
 
 
-n = 6
+n = 8
 pob_ini = [Nemesis() for _ in range(n)]
 
 
 def f_ideal(n:Nemesis):
-  return n.duration if n.duration > 0 else n.stimated_dur
+  return n.duration if n.duration > 0 else n.stimated_heur
+  #return n.damage_done if n.damage_done > 0 else n.stimated_heur
 
 def generateCandidates(population:list,ideals:list): #list f_ideal
   #lista aleatoria de las parejas para el torneo

@@ -385,6 +385,7 @@ while run:
     if(nemesis.healt <= 1):
         #are_fighting = False
         #reiniciamos la salud del jugador
+        nemesis_genes[current_nemesis].damage_done = 100 - player.healt
         player.healt = 100 
         print('nemesis a eliminar', current_nemesis)
         nemesis_group.empty()
